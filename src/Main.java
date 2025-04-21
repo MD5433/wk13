@@ -1,49 +1,59 @@
-
-
+import java.util.concurrent.Semaphore;
+//Mariah Dungey 04/21/2025
 public class Main {
     public static void main(String[] args) {
-        Hi obj1 = new Hi();
-        Hello obj2 = new Hello();
+        CheckingAccount account = new CheckingAccount(100);
+        Semaphore sem = new Semaphore(1, true);
 
-        Thread t1 = new Thread(obj1);
-        Thread t2 = new Thread(obj2);
-
-        t1.start();
-        t2.start();
-    }
-
-
-}
-
-
-class Hi implements Runnable{
-
-    public void run(){
-        for (int i = 0; i < 5; i++) {
-            System.out.println("hi");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                String name = Thread.currentThread().getName();
+                for (int i = 0; i < 10; i++) {
+                    try {
+                        sem.acquire();
+                        synchronized (account) {
+                            if (account.getBalance() > 0) {
+                                System.out.println(name + " tries to withdraw $10, balance: " +
+                                        account.withdraw(10));
+                            }
+                        }
+                        sem.release();
+                    } catch (InterruptedException e) {}
+                }
             }
+        };
 
-        }
+        //threads
+        Thread thdHusband = new Thread(r);
+        thdHusband.setName("Husband");
+        Thread thdWife = new Thread(r);
+        thdWife.setName("Wife");
+
+        thdHusband.start();
+        thdWife.start();
     }
-
-
 }
 
-class Hello implements Runnable{
-    public void run(){
-        for (int i = 0; i < 5; i++) {
-            System.out.println("hello");
+class CheckingAccount {
+    private int balance;
+
+    public CheckingAccount(int initialBalance) {
+        balance = initialBalance;
+    }
+
+    public int withdraw(int amount) {
+        if (amount <= balance) {
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-            }
+                Thread.sleep((int) (Math.random() * 200));
+            } catch (InterruptedException ie) {}
 
+            balance -= amount;
         }
+        return balance;
     }
 
-
+    public int getBalance() {
+        return balance;
+    }
 }
-
